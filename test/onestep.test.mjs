@@ -2,12 +2,13 @@ import { test } from "node:test"
 import assert from "node:assert/strict"
 import { execFile } from "node:child_process"
 import { promisify } from "node:util"
+import { fileURLToPath } from "node:url"
 import minifuse from "minifuse"
 
 const run = promisify(execFile)
 // Lives outside test/ — node --test would otherwise execute it as a test file
 // and hang awaiting stdin.
-const FIXTURE = new URL("../fixtures/demo.mjs", import.meta.url).pathname
+const FIXTURE = fileURLToPath(new URL("../fixtures/demo.mjs", import.meta.url))
 
 const stdin = (value) => async () => value === undefined ? "" : JSON.stringify(value)
 
@@ -73,7 +74,7 @@ test("fixture: --help prints usage and exits 0 without reading stdin", async () 
 })
 
 test("fixture: --help output larger than a pipe buffer is fully flushed", async () => {
-  const bighelp = new URL("../fixtures/bighelp.mjs", import.meta.url).pathname
+  const bighelp = fileURLToPath(new URL("../fixtures/bighelp.mjs", import.meta.url))
   const { stdout } = await run(process.execPath, [bighelp, "--help"], { maxBuffer: 2 * 1024 * 1024 })
   assert.equal(stdout.length, 512 * 1024 + 1) // help + trailing newline
 })
