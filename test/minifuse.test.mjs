@@ -52,6 +52,32 @@ test("merge skips undefined overrides but honors explicit null", () => {
   assert.deepEqual(merge({ host: "0.0.0.0" }, { host: null }), { host: null })
 })
 
+test("merge drops undefined keys in nested override objects too", () => {
+  const out = merge({ db: "sqlite" }, { db: { host: undefined, port: 5432 } })
+  assert.deepEqual(out, { db: { port: 5432 } })
+  assert.equal("host" in out.db, false)
+})
+
+test("merge never assigns __proto__ keys from piped JSON", async () => {
+  const config = await loadConfig({}, {
+    defaults: { staff: { issuer: "a" } },
+    readInput: async () => '{"staff":{"__proto__":{"secretKey":"evil","isAdmin":true}}}'
+  })
+  assert.equal(config.staff.secretKey, undefined)
+  assert.equal(config.staff.isAdmin, undefined)
+  assert.equal(Object.getPrototypeOf(config.staff), Object.prototype)
+  assert.equal({}.isAdmin, undefined) // no global pollution either
+})
+
+test("merge does not alias its inputs", async () => {
+  const defaults = { server: { host: "0.0.0.0" }, scopes: ["openid"] }
+  const config = await loadConfig({}, { defaults, readInput: async () => "" })
+  config.server.host = "clobbered"
+  config.scopes.push("clobbered")
+  assert.equal(defaults.server.host, "0.0.0.0")
+  assert.deepEqual(defaults.scopes, ["openid"])
+})
+
 test("loadConfig applies defaults < stdin < flags precedence", async () => {
   const config = await loadConfig(
     { port: "4000", "log-level": undefined },
