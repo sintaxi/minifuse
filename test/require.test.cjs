@@ -4,6 +4,10 @@ const { test } = require("node:test")
 const assert = require("node:assert/strict")
 const minifuse = require("minifuse")
 
+test("the package manifest is resolvable through the exports map", () => {
+  assert.equal(require("minifuse/package.json").name, "minifuse")
+})
+
 test("cjs require returns the callable one-step api with named parts attached", () => {
   assert.equal(typeof minifuse, "function")
   assert.deepEqual(
