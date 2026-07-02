@@ -72,6 +72,12 @@ test("fixture: --help prints usage and exits 0 without reading stdin", async () 
   assert.match(stdout, /Usage: demo/)
 })
 
+test("fixture: --help output larger than a pipe buffer is fully flushed", async () => {
+  const bighelp = new URL("../fixtures/bighelp.mjs", import.meta.url).pathname
+  const { stdout } = await run(process.execPath, [bighelp, "--help"], { maxBuffer: 2 * 1024 * 1024 })
+  assert.equal(stdout.length, 512 * 1024 + 1) // help + trailing newline
+})
+
 test("fixture: defaults < piped stdin < flags over a real pipe", async () => {
   const child = run(process.execPath, [FIXTURE, "--port", "4000"])
   child.child.stdin.end(JSON.stringify({ port: 3500, logLevel: "debug" }))
