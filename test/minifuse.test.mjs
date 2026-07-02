@@ -118,6 +118,16 @@ test("loadConfig rejects on malformed stdin JSON", async () => {
   )
 })
 
+test("loadConfig awaits an async validate hook", async () => {
+  await assert.rejects(
+    () => loadConfig({}, {
+      readInput: stdin({ staff: {} }),
+      validate: async (c) => { if (!c.staff?.issuer) throw new Error("staff.issuer is required") }
+    }),
+    /staff\.issuer is required/
+  )
+})
+
 test("loadConfig runs the validate hook against the merged config", async () => {
   await assert.rejects(
     () => loadConfig({}, {
