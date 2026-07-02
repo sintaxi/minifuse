@@ -130,7 +130,12 @@ a TTY, so running interactively never hangs on a read.
 - Secrets and structural config belong on stdin; CLI flags are for server
   knobs. `map` is the allowlist that enforces this.
 - Absent flags map to `undefined` and are skipped by the merge — passing no
-  flags changes nothing.
+  flags changes nothing. This includes declared booleans: minimist
+  materializes them as `false` when absent, but `minifuse()` drops those
+  phantom values unless the flag actually appears in argv (`--dev`,
+  `--no-dev`, `--dev=false`, or a short alias all count).
+- When `help` is set, the `--help` flag belongs to minifuse: it prints and
+  exits when passed, and never appears in the returned config.
 - Explicit `null` in stdin JSON deliberately clears a default.
 
 ## Test

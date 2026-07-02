@@ -33,6 +33,40 @@ test("one-step call without help option leaves --help as an ordinary flag", asyn
   assert.deepEqual(config, { _: [], help: true })
 })
 
+test("declared booleans the user never passed do not clobber stdin config", async () => {
+  const config = await minifuse([], { boolean: ["dev"], readInput: stdin({ dev: true }) })
+  assert.equal(config.dev, true)
+})
+
+test("explicitly passed booleans still win: --dev, --no-dev, and short aliases", async () => {
+  const on = await minifuse(["--dev"], { boolean: ["dev"], readInput: stdin({ dev: false }) })
+  assert.equal(on.dev, true)
+
+  const off = await minifuse(["--no-dev"], { boolean: ["dev"], readInput: stdin({ dev: true }) })
+  assert.equal(off.dev, false)
+
+  const short = await minifuse(["-d"], { boolean: ["dev"], alias: { d: "dev" }, readInput: stdin({ dev: false }) })
+  assert.equal(short.dev, true)
+  assert.equal(short.d, true)
+})
+
+test("booleans after a bare -- are positionals, not flags", async () => {
+  const config = await minifuse(["--", "--dev"], { boolean: ["dev"], readInput: stdin({ dev: true }) })
+  assert.equal(config.dev, true)
+  assert.deepEqual(config._, ["--dev"])
+})
+
+test("help option never leaks a phantom help:false into the config", async () => {
+  const config = await minifuse([], {
+    help: "usage",
+    readInput: stdin({ help: "https://docs.example" })
+  })
+  assert.equal(config.help, "https://docs.example")
+
+  const bare = await minifuse([], { help: "usage", readInput: stdin() })
+  assert.equal("help" in bare, false)
+})
+
 test("fixture: --help prints usage and exits 0 without reading stdin", async () => {
   const { stdout } = await run(process.execPath, [FIXTURE, "--help"])
   assert.match(stdout, /Usage: demo/)
